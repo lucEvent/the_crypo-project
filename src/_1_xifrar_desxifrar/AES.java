@@ -4,14 +4,10 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
@@ -55,7 +51,7 @@ public class AES {
     public byte[] cifrar(byte[] datos, String clave) {
         SecretKeySpec key = Crypt.generateKey(clave);
         byte[] res = Crypt.encrypt(datos, key);
-        return null;
+        return res;
     }
 
     public byte[] desxifrar(byte[] datos_cifrados, String clave) {
@@ -97,6 +93,7 @@ public class AES {
             try {
                 Cipher aesCipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
                 aesCipher.init(Cipher.DECRYPT_MODE, key);
+                System.out.println("paso3");
                 desciphertext = aesCipher.doFinal(content);
             } catch (Exception e) {
                 System.out.println("Crypt.decrypt.Exception:" + e.toString());
@@ -111,13 +108,14 @@ public class AES {
 
     public static void main(String[] args) {
 
-        if (args.length < 5) {
+        if (args.length < 4) {
             System.out.println("Error: no hay suficientes parametros\n");
             muestra_usage();
             return;
         }
+        AES aes = new AES();
 
-        String accion = args[1];
+        String accion = args[0];
         int iaccion;
         if (ACCION_CIFRAR.equals(accion)) {
             iaccion = CIFRAR;
@@ -129,23 +127,24 @@ public class AES {
             return;
         }
 
-        String clave = args[2];
+        String clave = args[1];
 
-        File fichero_in = new File(args[3]);
+        File fichero_in = new File(args[2]);
         byte[] datos = leer_fichero(fichero_in);
         if (datos == null) {
             System.out.println("Error: no se encuentra el fichero de entrada\n");
             muestra_usage();
         }
-        File fichero_out = new File(args[4]);
+        File fichero_out = new File(args[3]);
 
-        AES aes = new AES();
+
         byte[] resultado = null;
         switch (iaccion) {
             case CIFRAR:
                 resultado = aes.cifrar(datos, clave);
                 break;
             case DESCIFRAR:
+                System.out.println("Descifrando: clave:" + clave);
                 aes.desxifrar(datos, clave);
                 break;
         }
@@ -162,6 +161,7 @@ public class AES {
             while ((bytesread = bufferIn.read(aux, 0, 1024)) != -1) {
                 content.append(new String(aux, 0, bytesread));
             }
+            bufferIn.close();
             return content.toString().getBytes();
         } catch (Exception e) {
             System.out.println("AES.leer_fichero.Exception:" + e.toString());
@@ -170,13 +170,20 @@ public class AES {
     }
 
     public static void escribir_fichero(byte[] datos, File fichero) {
+        if (datos == null) {
+            System.out.println("Datos es null");
+            return;
+        }
         try {
             BufferedOutputStream bufferOut;
             bufferOut = new BufferedOutputStream(new FileOutputStream(fichero));
             bufferOut.write(datos, 0, datos.length);
+            bufferOut.flush();
+            bufferOut.close();
         } catch (Exception e) {
-            System.out.println("AES.leer_fichero.Exception:" + e.toString());
+            System.out.println("AES.escribir_fichero.Exception:" + e.toString());
         }
+
     }
 
     public static void muestra_usage() {
