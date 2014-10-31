@@ -1,19 +1,16 @@
 package _1_xifrar_desxifrar;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.io.FileOutputStream;
+import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -22,198 +19,178 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class AES {
 
-    private Debug2 debug2;
-    //  private String key = "thisisasecretkey";
-    private SecretKey aesKey;
-
     public AES() {
+    }
 
-        debug2 = new Debug2();
+    public AES(String mensaje, String clave) {
 
-        KeyGenerator keygen;
-        try {
-            keygen = KeyGenerator.getInstance("AES");
-            aesKey = keygen.generateKey();
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("AES.NoSuchAlgorithmException_1 " + e.toString());
 
+        byte[] codes = mensaje.getBytes();
+        if (codes == null || codes.length == 0) {
+            System.out.println("Code es null o vacio");
+            return;
+        }
+        SecretKeySpec secretkey = Crypt.generateKey(clave);
+        if (secretkey == null) {
+            System.out.println("Secretkey es null");
+            return;
         }
 
+        byte[] encode = Crypt.encrypt(codes, secretkey);
+        if (encode == null || encode.length == 0) {
+            System.out.println("Encode es null o vacio");
+            return;
+        }
+        byte[] desencode = Crypt.decrypt(encode, secretkey);
+        if (desencode == null || desencode.length == 0) {
+            System.out.println("Desencode es null o vacio");
+            return;
+        }
+
+        System.out.println("Mensaje incial   :" + mensaje);
+        System.out.println("Mnsje codificado :" + new String(encode));
+        System.out.println("Msj descodificado:" + new String(desencode));
     }
 
-    public String xifrar(File fitxer, String clauXifrat) throws FileNotFoundException, IOException {
-        return xifrar(llegirFitxer(fitxer), clauXifrat);
-    }
-
-    public String xifrar(String fitxer, String clauXifrat) {
-
-
-
-
+    public byte[] cifrar(byte[] datos, String clave) {
+        SecretKeySpec key = Crypt.generateKey(clave);
+        byte[] res = Crypt.encrypt(datos, key);
         return null;
     }
 
-    public byte[] xifrar_b(File fitxer, String clauXifrat) throws FileNotFoundException, IOException {
-        return xifrar_b(llegirFitxer(fitxer), clauXifrat);
-    }
-
-    public byte[] xifrar_b(String fitxer, String clauXifrat) {
-
-        byte[] res = debug2.encrypt(aesKey, fitxer);
-
-
+    public byte[] desxifrar(byte[] datos_cifrados, String clave) {
+        SecretKeySpec key = Crypt.generateKey(clave);
+        byte[] res = Crypt.decrypt(datos_cifrados, key);
         return res;
     }
 
-    public String desxifrar(byte[] fitxerenc) {
+    static class Crypt {
 
-        //       String res = debug.decrypt(clauXifrat, fitxerenc);
-        String res = debug2.decrypt(aesKey, fitxerenc);
-
-        return res;
-    }
-
-    private String llegirFitxer(File fitxer) throws FileNotFoundException, IOException {
-        StringBuilder content = new StringBuilder();
-        BufferedInputStream bufferIn;
-        bufferIn = new BufferedInputStream(new FileInputStream(fitxer));
-        byte[] aux = new byte[1024];
-        int bytesread;
-        while ((bytesread = bufferIn.read(aux, 0, 1024)) != -1) {
-            content.append(new String(aux, 0, bytesread));
+        public static SecretKeySpec generateKey(String clave) {
+            SecretKeySpec key = null;
+            try {
+                byte[] pass = (clave).getBytes("UTF-8");
+                MessageDigest sha = MessageDigest.getInstance("SHA-1");
+                pass = sha.digest(pass);
+                pass = Arrays.copyOf(pass, 16); // use only first 128 bit
+                key = new SecretKeySpec(pass, "AES");
+            } catch (Exception e) {
+                System.out.println("Crypt.generateKey.Exception:" + e.toString());
+            }
+            return key;
         }
-        return content.toString();
-    }
 
-    class Debug2 {
-
-        byte[] encrypt(SecretKey aesKey, String text) {
-
-
-
-            Cipher aesCipher;
+        public static byte[] encrypt(byte[] content, SecretKeySpec key) {
+            byte[] ciphertext = null;
             try {
-                // Create the cipher
-                aesCipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            } catch (NoSuchAlgorithmException e) {
-                System.out.println("Encrypt.NoSuchAlgorithmException_2 " + e.toString());
-                return null;
-            } catch (NoSuchPaddingException e) {
-                System.out.println("Encrypt.NoSuchPaddingException " + e.toString());
-                return null;
+                Cipher aesCipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+                aesCipher.init(Cipher.ENCRYPT_MODE, key);
+                ciphertext = aesCipher.doFinal(content);
+            } catch (Exception e) {
+                System.out.println("Crypt.encrypt.Exception:" + e.toString());
             }
-            //We use the generated aesKey from above to initialize the Cipher object for encryption:
-
-            try {
-                // Initialize the cipher for encryption
-                aesCipher.init(Cipher.ENCRYPT_MODE, aesKey);
-            } catch (InvalidKeyException e) {
-                System.out.println("Encrypt.InvalidKeyException " + e.toString());
-                return null;
-            }
-
-            // Our cleartext
-            byte[] cleartext = text.getBytes();
-
-            // Encrypt the cleartext
-            byte[] ciphertext;
-            try {
-                ciphertext = aesCipher.doFinal(cleartext);
-            } catch (IllegalBlockSizeException e) {
-                System.out.println("Encrypt.IllegalBlockSizeException " + e.toString());
-                return null;
-            } catch (BadPaddingException e) {
-                System.out.println("Encrypt.BadPaddingException " + e.toString());
-                return null;
-            }
-
-
-
-
             return ciphertext;
         }
 
-        public String decrypt(SecretKey aesKey, String encryptedtext) {
-            return decrypt(aesKey, encryptedtext.getBytes());
+        public static byte[] decrypt(byte[] content, SecretKeySpec key) {
+            byte[] desciphertext = null;
+            try {
+                Cipher aesCipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+                aesCipher.init(Cipher.DECRYPT_MODE, key);
+                desciphertext = aesCipher.doFinal(content);
+            } catch (Exception e) {
+                System.out.println("Crypt.decrypt.Exception:" + e.toString());
+            }
+            return desciphertext;
+        }
+    }
+    private static final String ACCION_CIFRAR = "-c";
+    private static final String ACCION_DESCIFRAR = "-d";
+    private static final int CIFRAR = 0;
+    private static final int DESCIFRAR = 1;
+
+    public static void main(String[] args) {
+
+        if (args.length < 5) {
+            System.out.println("Error: no hay suficientes parametros\n");
+            muestra_usage();
+            return;
         }
 
-        public String decrypt(SecretKey aesKey, byte[] encryptedbytes) {
-
-            Cipher aesCipher;
-            try {
-                // Create the cipher
-                aesCipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            } catch (NoSuchAlgorithmException e) {
-                System.out.println("Decrypt.NoSuchAlgorithmException_2 " + e.toString());
-                return null;
-            } catch (NoSuchPaddingException e) {
-                System.out.println("Decrypt.NoSuchPaddingException " + e.toString());
-                return null;
-            }
-
-            //We use the generated aesKey from above to initialize the Cipher object for encryption:
-            try {
-                // Initialize the same cipher for decryption
-                aesCipher.init(Cipher.DECRYPT_MODE, aesKey);
-            } catch (InvalidKeyException e) {
-                System.out.println("Decrypt.InvalidKeyException " + e.toString());
-                return null;
-            }
-            System.out.println("Descifrando encryptedbytes:" + new String(encryptedbytes));
-            System.out.println("Descifrando aesCipher" + aesCipher.toString());
-            byte[] cleartext;
-            try {
-                // Decrypt the ciphertext
-                cleartext = aesCipher.doFinal(encryptedbytes);
-            } catch (IllegalBlockSizeException e) {
-                System.out.println("Decrypt.IllegalBlockSizeException " + e.toString());
-                return null;
-            } catch (BadPaddingException e) {
-                System.out.println("Decrypt.BadPaddingException " + e.toString());
-                return null;
-            }
-            System.out.println("->" + new String(cleartext) + "<-->" + new String(encryptedbytes) + "<-");
-
-            return new String(cleartext);
-
-
+        String accion = args[1];
+        int iaccion;
+        if (ACCION_CIFRAR.equals(accion)) {
+            iaccion = CIFRAR;
+        } else if (ACCION_DESCIFRAR.equals(accion)) {
+            iaccion = DESCIFRAR;
+        } else {
+            System.out.println("Error: " + accion + " accion no definida\n");
+            muestra_usage();
+            return;
         }
 
-        class Debug3 {
+        String clave = args[2];
 
-            public byte[] encrypt(SecretKey key, byte[] content) {
-                byte[] ciphertext = null;
-                try {
-                    Cipher aesCipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-                    aesCipher.init(Cipher.ENCRYPT_MODE, aesKey);
-
-
-                    ciphertext = aesCipher.doFinal(content);
-                } catch (Exception ex) {
-                    Logger.getLogger(AES.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                return ciphertext;
-            }
-
-            public byte[] decrypt(SecretKey key, byte[] content) {
-                byte[] cleartext1;
-                try {
-                    Cipher aesCipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-    
-      aesCipher.init(Cipher.DECRYPT_MODE, aesKey);
-
-      // Decrypt the ciphertext
-      cleartext1 = aesCipher.doFinal(content);
-      
-      
-      return cleartext1;
-                } catch (NoSuchAlgorithmException ex) {
-                    Logger.getLogger(AES.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (NoSuchPaddingException ex) {
-                    Logger.getLogger(AES.class.getName()).log(Level.SEVERE, null, ex);
-                }
-
-            }
+        File fichero_in = new File(args[3]);
+        byte[] datos = leer_fichero(fichero_in);
+        if (datos == null) {
+            System.out.println("Error: no se encuentra el fichero de entrada\n");
+            muestra_usage();
         }
+        File fichero_out = new File(args[4]);
+
+        AES aes = new AES();
+        byte[] resultado = null;
+        switch (iaccion) {
+            case CIFRAR:
+                resultado = aes.cifrar(datos, clave);
+                break;
+            case DESCIFRAR:
+                aes.desxifrar(datos, clave);
+                break;
+        }
+        escribir_fichero(resultado, fichero_out);
+    }
+
+    public static byte[] leer_fichero(File fichero) {
+        try {
+            StringBuilder content = new StringBuilder();
+            BufferedInputStream bufferIn;
+            bufferIn = new BufferedInputStream(new FileInputStream(fichero));
+            byte[] aux = new byte[1024];
+            int bytesread;
+            while ((bytesread = bufferIn.read(aux, 0, 1024)) != -1) {
+                content.append(new String(aux, 0, bytesread));
+            }
+            return content.toString().getBytes();
+        } catch (Exception e) {
+            System.out.println("AES.leer_fichero.Exception:" + e.toString());
+        }
+        return null;
+    }
+
+    public static void escribir_fichero(byte[] datos, File fichero) {
+        try {
+            BufferedOutputStream bufferOut;
+            bufferOut = new BufferedOutputStream(new FileOutputStream(fichero));
+            bufferOut.write(datos, 0, datos.length);
+        } catch (Exception e) {
+            System.out.println("AES.leer_fichero.Exception:" + e.toString());
+        }
+    }
+
+    public static void muestra_usage() {
+        System.out.println("/*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* USAGE *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/");
+        System.out.println("/*                                                                       */");
+        System.out.println("/* nombre_programa accion clave fichero_entrada fichero_salida           */");
+        System.out.println("/*                                                                       */");
+        System.out.println("/* nombre_programa: aes.jar                                              */");
+        System.out.println("/* accion:    cifrar: -c                                                 */");
+        System.out.println("/*         descifrar: -d                                                 */");
+        System.out.println("/*                                                                       */");
+        System.out.println("/* exemplo:                                                              */");
+        System.out.println("/*    /java -jar aes.jar -c miclave mensaje.txt mensaje_cifrado.txt      */");
+        System.out.println("/*                                                                       */");
+        System.out.println("/*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*/");
     }
 }
