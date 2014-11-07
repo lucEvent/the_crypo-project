@@ -18,45 +18,19 @@ public class AES {
     public AES() {
     }
 
-    public AES(String mensaje, String clave) {
-
-
-        byte[] codes = mensaje.getBytes();
-        if (codes == null || codes.length == 0) {
-            System.out.println("Code es null o vacio");
-            return;
-        }
-        SecretKeySpec secretkey = Crypt.generateKey(clave);
-        if (secretkey == null) {
-            System.out.println("Secretkey es null");
-            return;
-        }
-
-        byte[] encode = Crypt.encrypt(codes, secretkey);
-        if (encode == null || encode.length == 0) {
-            System.out.println("Encode es null o vacio");
-            return;
-        }
-        byte[] desencode = Crypt.decrypt(encode, secretkey);
-        if (desencode == null || desencode.length == 0) {
-            System.out.println("Desencode es null o vacio");
-            return;
-        }
-
-        System.out.println("Mensaje incial   :" + mensaje);
-        System.out.println("Mnsje codificado :" + new String(encode));
-        System.out.println("Msj descodificado:" + new String(desencode));
-    }
-
     public byte[] cifrar(byte[] datos, String clave) {
+        System.out.println("Cifrando con clave:"+clave);
         SecretKeySpec key = Crypt.generateKey(clave);
+        System.out.println("Cifrado");
         byte[] res = Crypt.encrypt(datos, key);
         return res;
     }
 
-    public byte[] desxifrar(byte[] datos_cifrados, String clave) {
+    public byte[] descifrar(byte[] datos_cifrados, String clave) {
+        System.out.println("Descifrando con clave:"+clave);
         SecretKeySpec key = Crypt.generateKey(clave);
         byte[] res = Crypt.decrypt(datos_cifrados, key);
+        System.out.println("Descifrando");
         return res;
     }
 
@@ -93,7 +67,6 @@ public class AES {
             try {
                 Cipher aesCipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
                 aesCipher.init(Cipher.DECRYPT_MODE, key);
-                System.out.println("paso3");
                 desciphertext = aesCipher.doFinal(content);
             } catch (Exception e) {
                 System.out.println("Crypt.decrypt.Exception:" + e.toString());
@@ -144,25 +117,21 @@ public class AES {
                 resultado = aes.cifrar(datos, clave);
                 break;
             case DESCIFRAR:
-                System.out.println("Descifrando: clave:" + clave);
-                aes.desxifrar(datos, clave);
+                resultado = aes.descifrar(datos, clave);
                 break;
         }
         escribir_fichero(resultado, fichero_out);
     }
 
     public static byte[] leer_fichero(File fichero) {
+        System.out.println("Leyendo archivo");
         try {
-            StringBuilder content = new StringBuilder();
             BufferedInputStream bufferIn;
             bufferIn = new BufferedInputStream(new FileInputStream(fichero));
-            byte[] aux = new byte[1024];
-            int bytesread;
-            while ((bytesread = bufferIn.read(aux, 0, 1024)) != -1) {
-                content.append(new String(aux, 0, bytesread));
-            }
+            byte[] res = new byte[(int) fichero.length()];
+            bufferIn.read(res, 0, res.length);
             bufferIn.close();
-            return content.toString().getBytes();
+            return res;
         } catch (Exception e) {
             System.out.println("AES.leer_fichero.Exception:" + e.toString());
         }
@@ -170,10 +139,7 @@ public class AES {
     }
 
     public static void escribir_fichero(byte[] datos, File fichero) {
-        if (datos == null) {
-            System.out.println("Datos es null");
-            return;
-        }
+        System.out.println("Guardando resultado");
         try {
             BufferedOutputStream bufferOut;
             bufferOut = new BufferedOutputStream(new FileOutputStream(fichero));
