@@ -1,5 +1,6 @@
 package _1_xifrar_desxifrar;
 
+import crypto.io;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -154,7 +155,7 @@ public class AES {
             String clave = "C:\\Users\\rafael.jose.lucena\\Desktop\\C\\Jocs de prova\\mine\\SecretKey";
             String out = "C:\\Users\\rafael.jose.lucena\\Desktop\\C\\Jocs de prova\\mine\\resultat.jpg.enc";
 
-            byte[] bclave = leer_fichero(new File(clave));
+            byte[] bclave = io.leer_fichero(new File(clave));
             if (bclave.length != 16) {
                 System.out.println("Error clave mayor a 16 bytes");
                 return;
@@ -162,11 +163,11 @@ public class AES {
 
             SecretKeySpec k = new SecretKeySpec(bclave, Crypt.ALGORITHM);
 
-            byte[] datos = leer_fichero(new File(file));
+            byte[] datos = io.leer_fichero(new File(file));
 
             byte[] resultado = Crypt.encrypt(datos, k);
 
-            escribir_fichero(resultado, new File(out));
+            io.escribir_fichero(resultado, new File(out));
 
 
 
@@ -174,7 +175,7 @@ public class AES {
             clave = "C:\\Users\\rafael.jose.lucena\\Desktop\\C\\Jocs de prova\\mine\\SecretKey";
             out = "C:\\Users\\rafael.jose.lucena\\Desktop\\C\\Jocs de prova\\mine\\resultat.jpg";
 
-            bclave = leer_fichero(new File(clave));
+            bclave = io.leer_fichero(new File(clave));
             if (bclave.length != 16) {
                 System.out.println("Error clave mayor a 16 bytes");
                 return;
@@ -182,11 +183,11 @@ public class AES {
 
             k = new SecretKeySpec(bclave, Crypt.ALGORITHM);
 
-            datos = leer_fichero(new File(file));
+            datos = io.leer_fichero(new File(file));
 
             resultado = Crypt.decrypt(datos, k);
 
-            escribir_fichero(resultado, new File(out));
+            io.escribir_fichero(resultado, new File(out));
 
             if (true) {
                 return;
@@ -213,9 +214,9 @@ public class AES {
         }
         String clave = args[1];
 
-        byte[] bclave = leer_fichero(new File(args[1]));
+        byte[] bclave = io.leer_fichero(new File(args[1]));
 
-        byte[] datos = leer_fichero(new File(args[2]));
+        byte[] datos = io.leer_fichero(new File(args[2]));
         if (datos == null) {
             System.out.println("Error: no se encuentra el fichero de entrada\n");
             muestra_usage();
@@ -233,34 +234,7 @@ public class AES {
 //                resultado = aes.descifrar(datos, clave);
                 break;
         }
-        escribir_fichero(resultado, fichero_out);
-    }
-
-    public static byte[] leer_fichero(File fichero) {
-        System.out.println("Leyendo archivo");
-        try {
-            FileInputStream in = new FileInputStream(fichero);
-            byte[] res = new byte[(int) fichero.length()];
-            in.read(res);
-            in.close();
-            return res;
-        } catch (Exception e) {
-            System.out.println("AES.leer_fichero.Exception:" + e.toString());
-        }
-        return null;
-    }
-
-    public static void escribir_fichero(byte[] datos, File fichero) {
-        System.out.println("Guardando resultado");
-        try {
-            BufferedOutputStream bufferOut;
-            bufferOut = new BufferedOutputStream(new FileOutputStream(fichero));
-            bufferOut.write(datos, 0, datos.length);
-            bufferOut.flush();
-            bufferOut.close();
-        } catch (Exception e) {
-            System.out.println("AES.escribir_fichero.Exception:" + e.toString());
-        }
+        io.escribir_fichero(resultado, fichero_out);
     }
 
     public static void muestra_usage() {
