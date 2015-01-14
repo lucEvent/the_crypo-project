@@ -2,33 +2,41 @@ package _2_claus;
 
 import crypto.io;
 import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.AlgorithmParameterGenerator;
+import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
-import java.security.spec.ECParameterSpec;
+import java.security.spec.InvalidParameterSpecException;
 import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.crypto.KeyAgreement;
+import javax.crypto.spec.DHParameterSpec;
 
 public class Keys {
     
-    private final String RSAprivatefilename = "privadaRSA.pem";
-    private final String RSApublicfilename = "publicaRSA.pem";
-    private final String ECCprivatefilename = "privadaECC.pem";
-    private final String ECCpublicfilename = "publicaECC.pem";
+    public final String RSAprivatefilename = "privadaRSA.pem";
+    public final String RSApublicfilename = "publicaRSA.pem";
+    public final String ECCprivatefilename = "privadaECC.pem";
+    public final String ECCpublicfilename = "publicaECC.pem";
     
-    private final String RSA_PRIVATE_PEM_begin = "-----BEGIN RSA PRIVATE KEY-----";
-    private final String RSA_PRIVATE_PEM_end = "-----END RSA PRIVATE KEY-----";
+    public static final String RSA_PRIVATE_PEM_begin = "-----BEGIN RSA PRIVATE KEY-----";
+    public static final String RSA_PRIVATE_PEM_end = "-----END RSA PRIVATE KEY-----";
     
-    private final String ECC_PRIVATE_PEM_begin = "-----BEGIN EC PRIVATE KEY-----";
-    private final String ECC_PRIVATE_PEM_end = "-----END EC PRIVATE KEY-----";
+    public static final String ECC_PRIVATE_PEM_begin = "-----BEGIN EC PRIVATE KEY-----";
+    public static final String ECC_PRIVATE_PEM_end = "-----END EC PRIVATE KEY-----";
 
-    private final String PUBLIC_PEM_begin = "-----BEGIN PUBLIC KEY-----";
-    private final String PUBLIC_PEM_end = "-----END PUBLIC KEY-----";
+    public static final String PUBLIC_PEM_begin = "-----BEGIN PUBLIC KEY-----";
+    public static final String PUBLIC_PEM_end = "-----END PUBLIC KEY-----";
 
     /*
         RSAkey n
@@ -67,17 +75,19 @@ public class Keys {
         ECCkey corba
         entrada: corba nom de la corba amb la que es generara la clau ECC (podeu fer servir la
                   comanda openssl ecparam -list curves per obtenir el llistat de corbes);
-        sortida: dos fitxers, en format PEM, un que contingui la clau p´ublica ECDH i un altre amb
+        sortida: dos fitxers, en format PEM, un que contingui la clau publica ECDH i un altre amb
                 la clau privada ECDH.
+    */
+    /*
+    corba pot ser: secp256, secp384 ó secp521
     */
     public void ECCkey(String corba) {
         try {
-            //Steps
+               //Steps
             // 1 - Create a Key Pair Generator
             KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
             // 2 - Initialize the Key Pair Generator
-            ECGenParameterSpec ecsp;
-            ecsp = new ECGenParameterSpec(corba);
+            ECGenParameterSpec ecsp = new ECGenParameterSpec(corba);
             generator.initialize(ecsp);
             // 3 - Generate the Pair of Keys
             KeyPair pair = generator.generateKeyPair();
@@ -94,6 +104,7 @@ public class Keys {
             byte[] kpubpem = pemFormat(PUBLIC_PEM_begin, key, PUBLIC_PEM_end);
             io.escribir_fichero(kpubpem, new File(ECCpublicfilename));
             System.out.println("File en:"+new File(ECCpublicfilename).getAbsolutePath());
+            
         } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(Keys.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InvalidAlgorithmParameterException ex) {
@@ -101,17 +112,22 @@ public class Keys {
         }
     }
     
-    public static void main(String[] args) {
-        Keys k = new Keys();
-//        k.RSAkey(2048);
-        
-    String curva_nombre = "secp256r1";
-    k.ECCkey(curva_nombre);
-    }
+    public void OpenSSLECKey() {
+            Runtime r = Runtime.getRuntime();
+            
+            String[] args1 = {"openssl", "ecparam", "-param_enc", "explicit", "-name", "secp256r1", "-genkey", "-outform", "PEM", "-out", "ec-openssl.pem"};
+            String[] args2 = {"openssl", "ec", "-param_enc", "explicit", "-inform", "PEM", "-in", "ec-openssl.pem", "-pubout", "-outform", "DER", "-out", "ec-openssl.der"};
+        try {
 
+            Process p = r.exec(args1);
+        } catch (IOException ex) {
+            Logger.getLogger(Keys.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+ 
     private byte[] pemFormat(String begin, byte[] key, String end) {
         String fl = System.getProperty("line.separator");
-
+        System.out.println("Key has length: "+key.length);
         byte[] key64 = Base64.getEncoder().encode(key);
         
         StringBuilder res = new StringBuilder();
